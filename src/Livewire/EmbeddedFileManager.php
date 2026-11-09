@@ -194,9 +194,40 @@ class EmbeddedFileManager extends Component
         return $this->getAdapter()->getItems($this->currentPath);
     }
 
+    /**
+     * Get the folder tree for the sidebar.
+     *
+     * In storage mode only the visible part of the tree is listed: the root
+     * folders, the children of expanded folders, and one level below each
+     * visible folder so the tree knows which folders can be expanded. The
+     * full recursive tree lists every directory (and counts every folder's
+     * files) on each render, which is slow for large or remote disks.
+     */
     public function getFolderTreeProperty(): array
     {
-        return $this->getAdapter()->getFolderTree();
+        if ($this->getMode() !== 'storage') {
+            return $this->getAdapter()->getFolderTree();
+        }
+
+        return $this->visibleFolderLevel($this->getAdapter(), null);
+    }
+
+    /**
+     * One level of the folder tree. Expanded folders recurse; collapsed
+     * folders only list their immediate subfolders.
+     */
+    protected function visibleFolderLevel(FileManagerAdapterInterface $adapter, ?string $folderId): array
+    {
+        return array_map(function (array $folder) use ($adapter): array {
+            $id = (string) $folder['id'];
+
+            $folder['children'] = $this->isFolderExpanded($id)
+                ? $this->visibleFolderLevel($adapter, $id)
+                : $adapter->getFolderChildren($id);
+            $folder['has_children'] = $folder['children'] !== [];
+
+            return $folder;
+        }, $adapter->getFolderChildren($folderId));
     }
 
     public function getBreadcrumbsProperty(): array

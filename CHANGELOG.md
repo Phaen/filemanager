@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Embedded file manager in storage mode no longer walks the entire disk recursively (listing every folder's files) on each render: the folder tree lists only the visible levels, so large or remote disks stay responsive (follow-up to #8)
+
 ## [v2.1.1] - 2026-08-06
 
 ### Added

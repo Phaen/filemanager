@@ -239,6 +239,43 @@ describe('folder tree property', function () {
 
         expect($folderTree)->toBeArray();
     });
+
+    it('lists only one level below collapsed folders', function () {
+        mkdir($this->testPath . '/documents/archive/2024', 0777, true);
+
+        $component = new EmbeddedFileSystem();
+        $component->mount(disk: 'testing');
+
+        $documents = collect($component->folderTree)->firstWhere('name', 'documents');
+        $archive = collect($documents['children'])->firstWhere('name', 'archive');
+
+        expect($documents['has_children'])->toBeTrue();
+        expect($archive['children'])->toBe([]);
+    });
+
+    it('lists the children of expanded folders', function () {
+        mkdir($this->testPath . '/documents/archive/2024', 0777, true);
+
+        $component = new EmbeddedFileSystem();
+        $component->mount(disk: 'testing');
+        $component->toggleFolder('documents');
+
+        $documents = collect($component->folderTree)->firstWhere('name', 'documents');
+        $archive = collect($documents['children'])->firstWhere('name', 'archive');
+
+        expect($archive['has_children'])->toBeTrue();
+        expect(collect($archive['children'])->pluck('name')->all())->toBe(['2024']);
+    });
+
+    it('marks folders without subfolders as not expandable', function () {
+        $component = new EmbeddedFileSystem();
+        $component->mount(disk: 'testing');
+
+        $images = collect($component->folderTree)->firstWhere('name', 'images');
+
+        expect($images['has_children'])->toBeFalse();
+        expect($images['children'])->toBe([]);
+    });
 });
 
 describe('breadcrumbs property', function () {
